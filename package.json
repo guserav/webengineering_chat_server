@@ -1,0 +1,19 @@
+{
+  "name": "webengineering_chat_server",
+  "version": "1.0.0",
+  "description": "Assignment for the Webengineering Class @Mahidol University International College",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guserav/webengineering_chat_server.git"
+  },
+  "author": "Erik Zeiske",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/guserav/webengineering_chat_server/issues"
+  },
+  "homepage": "https://github.com/guserav/webengineering_chat_server#readme"
+}
