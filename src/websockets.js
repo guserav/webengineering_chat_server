@@ -100,6 +100,23 @@ module.exports = {
                     return;
                 }
 
+                //Terminate the previous websocket using this token
+                let lastConnection = this.connections[data.token];
+                if(!(lastConnection === undefined)){
+                    if(!(lastConnection === connection)){
+                        lastConnection.close(1003, 'Other connection established');
+                    }
+                }
+                this.connections[data.token] = connection;
+
+                //Token changed for the websocket
+                if(connection.lastTokenUsed !== data.token){
+                    if(connection.lastTokenUsed !== undefined){
+                        this.connections[connection.lastTokenUsed] = undefined;
+                    }
+                    connection.lastTokenUsed = data.token;
+                }
+
                 const actionToPerform = apiEndpoints[data.action];
                 if(actionToPerform === undefined){
                     errors.unknownAction(connection, data.action);
@@ -113,6 +130,7 @@ module.exports = {
         });
 
         connection.on('close', function(reasonCode, description) {
+            this.connections[connection.lastTokenUsed] = undefined;
             console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' + reasonCode + ': ' + description);
         });
     }
