@@ -19,7 +19,7 @@ const newWebsocketErrorForAction = function(type, message, action){
 
 const writeErrorToWebsocket = function(connection, error){
     connection.sendUTF(JSON.stringify(error));
-    console.log(new Date() + "Error send through websocket", error);
+    console.error(new Date() + "Error send through websocket", error);
 };
 
 module.exports = {

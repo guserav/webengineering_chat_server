@@ -5,16 +5,90 @@
 const tokens = require('./tokens.js');
 const errors = require('./errors.js');
 
+function writeObjectToWebsocket(connection, obj){
+    connection.sendUTF(JSON.stringify(obj));
+}
+
+function getRooms(connection, data) {
+    console.error('Method not yet implemented');
+    writeObjectToWebsocket(connection, {
+        action: data.action,
+        rooms:[{
+            roomType:"private",
+            members:[{
+                userID: "testUser"
+            }],
+            roomID:"klasdfj",
+            roomName:"TestRoom",
+            lastMessage:{
+                "messageID":"lkj",
+                "type":"message",
+                "content":"This is a dummy message"
+            },
+            lastReadMesage:"lkj"
+        }]}
+    );
+}
+
+function getMessages(connection, data) {
+    console.error('Method not yet implemented');
+    writeObjectToWebsocket(connection, {
+        action: data.action,
+        rooms:[{
+            roomID:"klasdfj",
+            roomName:"TestRoom",
+            messages:[{
+                "messageID":"lkj",
+                "type":"message",
+                "content":"This is a dummy message"
+            }]
+        }]}
+    );
+}
+
+function sendMessage(connection, data) {
+    console.error('Method not yet implemented');
+    writeObjectToWebsocket(connection, {
+        action: data.action,
+        messageStatus:"ok",
+        requestID:data.requestID
+    })
+}
+
+function createRoom(connection, data) {
+    console.error('Method not yet implemented');
+    writeObjectToWebsocket(connection, {
+        action: data.action,
+        roomStatus:"ok",
+        invalidUsers:[{userID:"asöklfj"}]
+    })
+}
+
+function addPersonToRoom(connection, data) {
+    console.error('Method not yet implemented');
+    writeObjectToWebsocket(connection, {
+        action: data.action,
+        roomStatus:"ok",
+        invalidUsers:[{userID:"asöklfj"}]
+    })
+}
+
+function readRoom(connection, data) {
+    console.error('Method not yet implemented');
+}
+
 const apiEndpoints = { //TODO implement all api endpoints
-    getRooms: undefined,
-    getMessages: undefined,
-    sendMessage: undefined,
-    createRoom: undefined,
-    addPersonToRoom: undefined,
-    readRoom: undefined
+    getRooms: getRooms,
+    getMessages: getMessages,
+    sendMessage: sendMessage,
+    createRoom: createRoom,
+    addPersonToRoom: addPersonToRoom,
+    readRoom: readRoom
 };
 
 module.exports = {
+    connections:{},
+
     setupConnection: function (connection){
         connection.on('message', function(message) {
             if (message.type === 'utf8') {
@@ -37,6 +111,7 @@ module.exports = {
                 errors.binaryDataReceived(connection);
             }
         });
+
         connection.on('close', function(reasonCode, description) {
             console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' + reasonCode + ': ' + description);
         });
