@@ -1,0 +1,18 @@
+{
+  "jwt":{
+    "signKeyLocation":null,
+    "decryptKeyLocation":null,
+    "signOptions":{
+      "algorithm":"HS256",
+      "expiresIn":null
+    },
+    "verifyOptions":{
+      "algorithm":["HS256"],
+      "maxAge":null,
+      "clockTolerance":0
+    }
+  },
+  "database":{
+
+  }
+}
