@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/guserav/webengineering_chat_server#readme",
   "dependencies": {
+    "express": "^4.16.2",
     "jsonwebtoken": "^8.1.1",
     "websocket": "^1.0.25"
   }
