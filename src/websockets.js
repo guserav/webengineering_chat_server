@@ -4,6 +4,7 @@
  */
 const tokens = require('./tokens.js');
 const errors = require('./errors.js');
+const jwt = require('jsonwebtoken');
 
 function writeObjectToWebsocket(connection, obj){
     connection.sendUTF(JSON.stringify(obj));
@@ -96,24 +97,25 @@ module.exports = {
                 console.log('Received Message: ' + message.utf8Data);
 
                 const data = JSON.parse(message.utf8Data);
-                if(!tokens.isValidToken(data.token)){
+                const tokenData = tokens.isValidToken(data.token);
+                if(!tokenData){
                     errors.closeWebsocketInvalidToken(connection, data.token);
                     return;
                 }
 
                 //Terminate the previous websocket using this token
-                let lastConnection = this.connections[data.token];
+                let lastConnection = _this.connections[tokenData.user];
                 if(!(lastConnection === undefined)){
                     if(!(lastConnection === connection)){
                         lastConnection.close(1003, 'Other connection established');
                     }
                 }
-                this.connections[data.token] = connection;
+                _this.connections[tokenData.user] = connection;
 
                 //Token changed for the websocket
                 if(connection.lastTokenUsed !== data.token){
                     if(connection.lastTokenUsed !== undefined){
-                        this.connections[connection.lastTokenUsed] = undefined;
+                        _this.connections[jwt.decode(connection.lastTokenUsed).user] = undefined;
                     }
                     connection.lastTokenUsed = data.token;
                 }
@@ -131,7 +133,7 @@ module.exports = {
         });
 
         connection.on('close', function(reasonCode, description) {
-            this.connections[connection.lastTokenUsed] = undefined;
+            _this.connections[connection.lastTokenUsed] = undefined;
             console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' + reasonCode + ': ' + description);
         });
     },
