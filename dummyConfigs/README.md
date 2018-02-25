@@ -2,7 +2,7 @@
 ## config.json
 This config is the base config to specify the general configuration of the chatserver.
 The config has the following categories:
-##jwt
+## jwt
 Includes the all options related to JavascriptWebTokens.
 
 - signKeyLocation: The path of the file containing the signing key (Path is relative to /config)
@@ -11,6 +11,11 @@ Includes the all options related to JavascriptWebTokens.
 - verifyOptions: a object containing the options for [jwt.verify](https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback)
 
 
-##database
+## database
 All options for the database pool connection.
 The config object is passed plain to the database connection therefor it should have the form of the [specification](https://github.com/mysqljs/mysql#pool-options)
+
+## http
+All options related to the http server
+
+- port: the port to listen on

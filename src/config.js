@@ -25,5 +25,6 @@ module.exports = {
         signOptions: config.jwt.signOptions,
         verifyOptions: config.jwt.verifyOptions
     },
-    database:config.database
+    database:config.database,
+    http:config.http
 };

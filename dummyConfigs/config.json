@@ -18,5 +18,8 @@
     "host":"locahost",
     "port":"3306",
     "database":"chat_server"
+  },
+  "http":{
+    "port":"8080"
   }
 }
