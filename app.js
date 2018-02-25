@@ -1,16 +1,16 @@
 const HTTP_SERVER_PORT = 8080;
 
+const config = require('./src/config.js');
 const WebSocketServer = require('websocket').server;
 const http = require('http');
 const websocketLogic = require('./src/websockets');
 const mysql      = require('mysql');
 
 // Initiate Database
-const pool = mysql.createPool({
-    host     : 'example.org',
-    user     : 'bob',
-    password : 'secret'
-});
+const pool = mysql.createPool(config.database);
+if(!pool) console.error(new Date() + "Failed to establish database connection!");
+// TODO check if database is ready
+
 const server = http.createServer(function(request, response) {
     console.log((new Date()) + ' Received request for ' + request.url);
     response.writeHead(404);
@@ -25,7 +25,7 @@ server.listen(HTTP_SERVER_PORT, function() {
 
 
 // Websocket initiation
-websocketLogic.setDatabaseConnectionPool(pool); //TODO pass database connection
+websocketLogic.setDatabaseConnectionPool(pool);
 wsServer = new WebSocketServer({
     httpServer: server,
     autoAcceptConnections: false
