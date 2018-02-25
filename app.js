@@ -3,7 +3,14 @@ const HTTP_SERVER_PORT = 8080;
 const WebSocketServer = require('websocket').server;
 const http = require('http');
 const websocketLogic = require('./src/websockets');
+const mysql      = require('mysql');
 
+// Initiate Database
+const pool = mysql.createPool({
+    host     : 'example.org',
+    user     : 'bob',
+    password : 'secret'
+});
 const server = http.createServer(function(request, response) {
     console.log((new Date()) + ' Received request for ' + request.url);
     response.writeHead(404);
@@ -15,6 +22,10 @@ server.listen(HTTP_SERVER_PORT, function() {
     console.log((new Date()) + ' Server is running on ' + host + ' and listening on port ' + port);
 });
 
+
+
+// Websocket initiation
+websocketLogic.setDatabaseConnectionPool(pool); //TODO pass database connection
 wsServer = new WebSocketServer({
     httpServer: server,
     autoAcceptConnections: false

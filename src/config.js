@@ -24,5 +24,6 @@ module.exports = {
         decryptKey: decryptKey,
         signOptions: config.jwt.signOptions,
         verifyOptions: config.jwt.verifyOptions
-    }
+    },
+    database:config.database
 };

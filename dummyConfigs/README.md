@@ -12,5 +12,5 @@ Includes the all options related to JavascriptWebTokens.
 
 
 ##database
-All options for the database connection.
-WIP
+All options for the database pool connection.
+The config object is passed plain to the database connection therefor it should have the form of the [specification](https://github.com/mysqljs/mysql#pool-options)

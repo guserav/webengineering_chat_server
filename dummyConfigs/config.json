@@ -13,6 +13,10 @@
     }
   },
   "database":{
-
+    "password":null,
+    "user":"chat_server_user",
+    "host":"locahost",
+    "port":"3306",
+    "database":"chat_server"
   }
 }

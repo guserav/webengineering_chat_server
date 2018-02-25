@@ -133,5 +133,10 @@ module.exports = {
             this.connections[connection.lastTokenUsed] = undefined;
             console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. ' + reasonCode + ': ' + description);
         });
+    },
+
+    setDatabaseConnectionPool: function(pool){
+        if(!pool) console.error(new Date() + " Database connection not valid");
+        this.databaseConPool = pool;
     }
 };
