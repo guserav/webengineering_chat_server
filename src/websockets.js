@@ -9,7 +9,7 @@ function writeObjectToWebsocket(connection, obj){
     connection.sendUTF(JSON.stringify(obj));
 }
 
-function getRooms(connection, data) {
+function getRooms(connection, data, pool) {
     console.error('Method not yet implemented');
     writeObjectToWebsocket(connection, {
         action: data.action,
@@ -30,7 +30,7 @@ function getRooms(connection, data) {
     );
 }
 
-function getMessages(connection, data) {
+function getMessages(connection, data, pool) {
     console.error('Method not yet implemented');
     writeObjectToWebsocket(connection, {
         action: data.action,
@@ -46,7 +46,7 @@ function getMessages(connection, data) {
     );
 }
 
-function sendMessage(connection, data) {
+function sendMessage(connection, data, pool) {
     console.error('Method not yet implemented');
     writeObjectToWebsocket(connection, {
         action: data.action,
@@ -55,7 +55,7 @@ function sendMessage(connection, data) {
     })
 }
 
-function createRoom(connection, data) {
+function createRoom(connection, data, pool) {
     console.error('Method not yet implemented');
     writeObjectToWebsocket(connection, {
         action: data.action,
@@ -64,7 +64,7 @@ function createRoom(connection, data) {
     })
 }
 
-function addPersonToRoom(connection, data) {
+function addPersonToRoom(connection, data, pool) {
     console.error('Method not yet implemented');
     writeObjectToWebsocket(connection, {
         action: data.action,
@@ -73,7 +73,7 @@ function addPersonToRoom(connection, data) {
     })
 }
 
-function readRoom(connection, data) {
+function readRoom(connection, data, pool) {
     console.error('Method not yet implemented');
 }
 
@@ -90,6 +90,7 @@ module.exports = {
     connections:{},
 
     setupConnection: function (connection){
+        const _this = this;
         connection.on('message', function(message) {
             if (message.type === 'utf8') {
                 console.log('Received Message: ' + message.utf8Data);
@@ -123,7 +124,7 @@ module.exports = {
                     return;
                 }
 
-                actionToPerform(connection, data);
+                actionToPerform(connection, data, _this.databaseConPool);
             } else if (message.type === 'binary') {
                 errors.binaryDataReceived(connection);
             }
