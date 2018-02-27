@@ -27,7 +27,7 @@ server.listen(config.http.port, function() {
 
 // Websocket initiation
 websocketLogic.setDatabaseConnectionPool(pool);
-wsServer = new WebSocketServer({
+const wsServer = new WebSocketServer({
     httpServer: server,
     autoAcceptConnections: false
 });

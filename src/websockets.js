@@ -52,7 +52,7 @@ function sendMessage(connection, data, pool) {
         action: data.action,
         messageStatus:"ok",
         requestID:data.requestID
-    })
+    });
 }
 
 function createRoom(connection, data, pool) {
@@ -61,7 +61,7 @@ function createRoom(connection, data, pool) {
         action: data.action,
         roomStatus:"ok",
         invalidUsers:[{userID:"asöklfj"}]
-    })
+    });
 }
 
 function addPersonToRoom(connection, data, pool) {
@@ -70,7 +70,7 @@ function addPersonToRoom(connection, data, pool) {
         action: data.action,
         roomStatus:"ok",
         invalidUsers:[{userID:"asöklfj"}]
-    })
+    });
 }
 
 function readRoom(connection, data, pool) {

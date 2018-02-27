@@ -16,9 +16,9 @@ module.exports = {
         try {
             decodedToken = jwt.verify(token, config.jwt.decryptKey, config.jwt.verifyOptions);
         } catch (error) {
-            if(error.name = TOKEN_EXPIRED_ERROR){
+            if(error.name === TOKEN_EXPIRED_ERROR){
                 console.log(error);
-            } else if(error.name = JWT_ERROR){
+            } else if(error.name === JWT_ERROR){
                 console.log("Invalid token given: " + error);
             } else {
                 console.error(new Date() + "Unexpected error while verifying token");

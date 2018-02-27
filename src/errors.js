@@ -24,7 +24,7 @@ const writeErrorToWebsocket = function(connection, error){
 
 module.exports = {
     binaryDataReceived: function(connection) {
-        writeErrorToWebsocket(newWebsocketError(INVALID_WEBSOCKET_REQUEST, 'Binary data is not accepted'));
+        writeErrorToWebsocket(connection, newWebsocketError(INVALID_WEBSOCKET_REQUEST, 'Binary data is not accepted'));
     },
 
     unknownAction: function(connection, action){

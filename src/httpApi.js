@@ -40,7 +40,7 @@ module.exports = {
                         return;
                     }
                     res.status(200).send(token.getNewToken(user));
-                })
+                });
             });
         });
 
@@ -64,6 +64,7 @@ module.exports = {
             _this.databaseConPool.getConnection(function(err, connection){
                 if(err) throw err;
                 connection.query('INSERT INTO `user`(`userID`, `passwordHash`, `salt`) VALUES (? , ?, ?)', [user, hash, salt], function(err, results, fields) {
+                    // TODO add detailed answer
                     connection.release();
                     if(err){
                         res.sendStatus(403);
