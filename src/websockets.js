@@ -185,7 +185,13 @@ module.exports = {
             if (message.type === 'utf8') {
                 console.log('Received Message: ' + message.utf8Data);
 
-                const data = JSON.parse(message.utf8Data);
+                let data;
+                try {
+                    data = JSON.parse(message.utf8Data);
+                } catch (error){
+                    errors.noJSONReceived(connection, message.utf8Data);
+                    return;
+                }
                 const tokenData = tokens.isValidToken(data.token);
                 if(!tokenData){
                     errors.closeWebsocketInvalidToken(connection, data.token);
