@@ -124,15 +124,14 @@ function getRooms(connection, data, pool) {
 function getMessages(connection, data, pool) {
     console.error('Method not yet implemented');
     writeObjectToWebsocket(connection, {
-            action: data.action,
-            roomID: data.roomID,
-            roomName: "TestRoom",
-            messages: [{
-                "messageID": "lkj",
-                "type": "message",
-                "content": "This is a dummy message"
-            }]
-        }
+        action: data.action,
+        roomID: data.roomID,
+        roomName: "TestRoom",
+        messages: [{
+            "messageID": "lkj",
+            "type": "message",
+            "content": "This is a dummy message"
+        }]}
     );
 }
 
@@ -159,6 +158,7 @@ function addPersonToRoom(connection, data, pool) {
     writeObjectToWebsocket(connection, {
         action: data.action,
         roomStatus:"ok",
+        requestID:data.requestID,
         invalidUsers:[{userID:"asöklfj"}]
     });
 }
