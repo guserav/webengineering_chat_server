@@ -7,7 +7,7 @@ const httpApi = require('./src/httpApi.js');
 const mysql      = require('mysql');
 
 // Initiate Database
-const pool = mysql.createPool(config.database);
+const pool = mysql.createPool(Object.assign({multipleStatements:true}, config.database));
 if(!pool) console.error(new Date() + "Failed to establish database connection!");
 // TODO check if database is ready
 
