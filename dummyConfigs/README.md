@@ -2,6 +2,8 @@
 ## config.json
 This config is the base config to specify the general configuration of the chatserver.
 The config has the following categories:
+## debug
+Boolean that indicates whether the server should be started in debug mode.
 ## jwt
 Includes the all options related to JavascriptWebTokens.
 

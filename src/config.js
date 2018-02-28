@@ -26,5 +26,6 @@ module.exports = {
         verifyOptions: config.jwt.verifyOptions
     },
     database:config.database,
-    http:config.http
+    http:config.http,
+    debug:config.debug
 };

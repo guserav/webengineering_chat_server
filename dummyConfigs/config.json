@@ -1,4 +1,5 @@
 {
+  "debug":false,
   "jwt":{
     "signKeyLocation":null,
     "decryptKeyLocation":null,
