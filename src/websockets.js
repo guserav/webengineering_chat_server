@@ -144,12 +144,182 @@ function sendMessage(connection, data, pool) {
     });
 }
 
-function createRoom(connection, data, pool) {
-    console.error('Method not yet implemented');
-    writeObjectToWebsocket(connection, {
-        action: data.action,
-        roomStatus:"ok",
-        invalidUsers:[{userID:"asöklfj"}]
+/**
+ * Create a new Room and add the users specified
+ *
+ * By
+ * Creating an entry in room
+ *
+ * Creating a RoomMessages_%roomID% Table
+ * Adding a message stating that the room has been initialised
+ *
+ * Adding all users via room_user with last message read initialised to 0
+ *
+ * Writing a response that all users have been successfully added
+ * Writing a message to all users that they have been added
+ *
+ * @param connection
+ * @param data
+ * @param pool
+ * @param connections
+ */
+function createRoom(connection, data, pool, connections) {
+    const user = jwt.decode(data.token).user;
+
+    if(data.roomName === undefined || (data.roomName === null && data.roomType === "private")){
+        errors.missingData(connection, data.action, "roomName must be set.");
+        return;
+    }
+    if(data.invite === null || data.invite === undefined){
+        errors.missingData(connection, data.action, "invite must be set.");
+        return;
+    }
+    pool.getConnection(async function(err, databaseConnection){
+        if(err) throw err;
+        //TODO verify legimety of the Request e.g only 2 users in private chat room
+        let existingUsers = [];
+        let usersToTest = [];
+        const roomDisplayName = (data.roomType === "private")? null : data.roomName;
+
+
+        if(roomDisplayName === null){//privateRoom
+            usersToTest = [data.invite.toString(), user];
+        } else { //public room
+            usersToTest = data.invite;
+        }
+
+        //No need to remove duplicates from usersToTest because they don't ruin the sql statement
+        await new Promise(function(fulfill, reject){
+            databaseConnection.query("SELECT `userID` FORM `user` WHERE `userID` IN (?)", [usersToTest], function(err, resultCheckUser){
+                if(err){
+                    reject(err);
+                    return;
+                }
+                for(let i = 0; i < resultCheckUser.length; i++){
+                    existingUsers.push(resultCheckUser[i].userID);
+                }
+                fulfill(null);
+            });
+        });
+
+        let usersNotAdded = [];
+        //Filter all users that have not been added
+        for(let i = 0; i < usersToTest; i++){
+            let found = false;
+            for(let j = 0; j < existingUsers; j++){
+                if(usersToTest[i] === existingUsers[j]){
+                    found = true;
+                }
+            }
+            if(!found){
+                //Prevent adding duplicates to usersNotAdded
+                for(let j = 0; j < usersNotAdded.length; j++){
+                    if(usersNotAdded[j] === usersToTest[i]){
+                        found = true;
+                    }
+                }
+                if(!found){
+                    usersNotAdded.push(usersToTest[i]);
+                }
+            }
+        }
+
+        let errorMsgInvalidUsers = {
+            action:data.action,
+            requestID:data.requestID,
+            roomStatus:"invalid",
+            invalidUsers:usersNotAdded
+        };
+
+        if(roomDisplayName === null && existingUsers.length !== 2){
+            errorMsgInvalidUsers.errorMsg = "Private room needs exatly to users.";
+            writeObjectToWebsocket(connection, errorMsgInvalidUsers);
+            databaseConnection.release();
+            return;
+        }
+        if(existingUsers.length === undefined || existingUsers.length <= 0){
+            errorMsgInvalidUsers.errorMsg = "Public room needs at least 1 person to be added.";
+            writeObjectToWebsocket(connection, errorMsgInvalidUsers);
+            databaseConnection.release();
+            return;
+        }
+
+        // Create the room in the room table
+        databaseConnection.query("INSERT (`displayName`) INTO `room` VALUE (?);", [roomDisplayName], function(err, resultsRoomCreated){
+            if(err){
+                databaseConnection.release();
+                throw err;
+            }
+            //Setup constants for easier access
+            const newRoomID = resultsRoomCreated.insertId;
+            if(!newRoomID) throw new Error("Expected that insertID was set. See for details https://github.com/mysqljs/mysql#getting-the-id-of-an-inserted-row");
+            const newRoomDatabaseName = buildRoomDatabaseName(newRoomID);
+
+            //Create the roomtable and add a creation message to it
+            const queryCreateTableAndAddCreationMessage = "CREATE TABLE ? (`messageID` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `userID` VARCHAR(30), `type` VARCHAR(20), `answerToMessageID` INT, `content` TEXT NOT NULL, `sendOn` DATE NOT NULL DEFAULT CURRENT_TIMESTAMP );" +
+                "INSERT (`userID`, `type`, `content`) INTO ? VALUES (?,?,?);";
+            const messageRoomCreated = (roomDisplayName === null)?"Hello in your private chat room":"Room was created by " + user + " with name " + roomDisplayName + ".";
+            databaseConnection.query(queryCreateTableAndAddCreationMessage, [newRoomDatabaseName, newRoomDatabaseName, user, "system", messageRoomCreated], function(err, resultRoomCreation){
+                if(err){
+                    databaseConnection.release();
+                    throw err;
+                }
+                //Assuming everything is fine with the query and moving on to next step
+                //Building array of values to add
+                let arrayToAdd = [];
+                for(let i = 0; i < existingUsers.length; i++){
+                    arrayToAdd.push([newRoomID, existingUsers[i], 0]);
+                }
+
+                // Add all users to the room via adding them in the user_room table
+                databaseConnection.query("INSERT (`roomID`, `userID`, `lastMessageRead`) INTO `user_room` VALUES ?", [arrayToAdd], function(err, resultUsersAdded){
+                    if(err){
+                        databaseConnection.release();
+                        throw err;
+                    }
+                    if(resultUsersAdded.affectedRows !== existingUsers.length){
+                        console.error(new Date() + "Only added " + resultUsersAdded.affectedRows + "/" + existingUsers + "users to the room created.");
+                    }
+
+                    let websocketResponse = {
+                        action:data.action,
+                        requestID:data.requestID,
+                        roomID:newRoomID,
+                        roomStatus:(usersNotAdded.length>0)?"partially added users":"ok",
+                        invalidUsers:usersNotAdded
+                    };
+
+                    writeObjectToWebsocket(connection, websocketResponse);
+
+                    //TODO check if result really contains the insertId
+                    let websocketNewMessageNotification = {
+                        action:"newMessages",
+                        data:[{
+                            roomID: newRoomID,
+                            messages: [{
+                                type: "system",
+                                content: messageRoomCreated,
+                                userID: user,
+                                messageID: resultRoomCreation[1].insertId
+                            }]
+                        }]
+                    };
+                    for(let i = 0; i < existingUsers; i++){
+                        const userConnection = connections[existingUsers[i]];
+                        if(userConnection){
+                            try{
+                                //Test if connection is still open
+                                if(userConnection.connected && userConnection.closeDescription === null){
+                                    writeObjectToWebsocket(userConnection, websocketNewMessageNotification);
+                                }
+                            } catch(err){
+                                console.error(new Date() + "Tried to send new message request to a websocket that should still be open.: " + err);
+                            }
+                        }
+                    }
+                });
+            });
+        });
     });
 }
 

@@ -27,11 +27,19 @@ module.exports = {
         writeErrorToWebsocket(connection, newWebsocketError(INVALID_WEBSOCKET_REQUEST, 'Binary data is not accepted'));
     },
 
+    noJSONReceived: function(connection, msg){
+        writeErrorToWebsocket(connection, newWebsocketError(INVALID_WEBSOCKET_REQUEST, 'Data is not in json format: ' + msg));
+    },
+
     unknownAction: function(connection, action){
         writeErrorToWebsocket(connection, newWebsocketErrorForAction(INVALID_WEBSOCKET_REQUEST, "Unknown action", action));
     },
 
     closeWebsocketInvalidToken: function(connection, token){
         connection.close(INVALID_TOKEN.code, util.format(INVALID_TOKEN.description, token));
+    },
+
+    missingData: function(connection, action, message){
+        writeErrorToWebsocket(connection, newWebsocketErrorForAction(INVALID_WEBSOCKET_REQUEST, message, action));
     }
 };
