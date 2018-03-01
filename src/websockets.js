@@ -414,7 +414,8 @@ function createRoom(connection, data, pool, connections) {
                                 type: "system",
                                 content: messageRoomCreated,
                                 userID: user,
-                                messageID: resultRoomCreation[1].insertId
+                                messageID: resultRoomCreation[1].insertId,
+                                sendOn:new Date()
                             }]
                         }]
                     };
