@@ -38,7 +38,7 @@ function getRooms(connection, data, pool) {
             for(let i = 0; i < resultMemberOfRooms.length; i++){
                 perRoomPromises.push(new Promise(function(fulfill, reject){
                     try{
-                        let roomData = {};
+                        let roomData = {lastReadMessage:resultMemberOfRooms[i].lastMessageRead};
                         let getRoomMember = new Promise(function (fulfill, reject) {
                             databaseConnection.query("SELECT `userID`, `lastMessageRead` FROM `room_user` WHERE `roomID` = ?", [resultMemberOfRooms[i].roomID], function(err, resultRoomMember, field){
                                 if(err){
