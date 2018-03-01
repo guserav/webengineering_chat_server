@@ -121,18 +121,57 @@ function getRooms(connection, data, pool) {
     });
 }
 
+/**
+ * Get the messages for a given room
+ *
+ * If the user is not in the room then the websocket receives an error message.
+ *
+ * Else an answer is transmitted with the requested data in it
+ *
+ * @param connection
+ * @param data
+ * @param pool
+ */
 function getMessages(connection, data, pool) {
-    console.error('Method not yet implemented');
-    writeObjectToWebsocket(connection, {
-        action: data.action,
-        roomID: data.roomID,
-        roomName: "TestRoom",
-        messages: [{
-            "messageID": "lkj",
-            "type": "message",
-            "content": "This is a dummy message"
-        }]}
-    );
+    const user = jwt.decode(data.token).user;
+    const room = data.room;
+
+    pool.getConnection(function(err, databaseConnection) {
+        if (err) throw err;
+        databaseConnection.query("SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?", [user, room], function(err, result){
+            if(err || result.length === undefined || result.length <= 0){
+                databaseConnection.release();
+                errors.missingData(connection, data.action, "User not in Room");
+                return;
+            }
+
+            const callbackQuery = function (err, resultMessages) {
+                databaseConnection.release();
+                if (err) throw err;
+                let websocketResponse = {
+                    action: data.action,
+                    messages: resultMessages.reverse()
+                };
+                writeObjectToWebsocket(connection, websocketResponse);
+            };
+            //TODO deside wich query to user based on maxCount and startFromID
+            const roomTable = buildRoomDatabaseName(room);
+            if(data.startFromID !== undefined) {
+                if (data.maxCount !== undefined && data.maxCount > 0) {
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? WHERE `messageID` < ? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.startFromID, data.maxCount], callbackQuery);
+                } else {
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? WHERE `messageID` < ? ORDER BY `messageID` DESC;", [roomTable, data.startFromID], callbackQuery);
+                }
+            } else {
+                if (data.maxCount !== undefined && data.maxCount > 0) {
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.maxCount], callbackQuery);
+                } else {
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? ORDER BY `messageID` DESC;", [roomTable], callbackQuery);
+                }
+
+            }
+        });
+    });
 }
 
 function sendMessage(connection, data, pool) {
