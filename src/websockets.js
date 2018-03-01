@@ -174,12 +174,87 @@ function getMessages(connection, data, pool) {
     });
 }
 
-function sendMessage(connection, data, pool) {
-    console.error('Method not yet implemented');
-    writeObjectToWebsocket(connection, {
-        action: data.action,
-        messageStatus:"ok",
-        requestID:data.requestID
+/**
+ * Send the wanted message and broadcasts a new Message action to all users
+ * @param connection
+ * @param data
+ * @param pool
+ * @param connections
+ */
+function sendMessage(connection, data, pool, connections) {
+    const user = jwt.decode(data.token).user;
+    const room = data.room;
+    const type = data.type;
+    const answerToMessageID = data.answerToMessageID;
+    const content = data.content;
+
+    if(type !== "message" && type !== "picture" && type !== "answer"){
+        errors.missingData(connection, data.action, "No valid type provided");
+        return;
+    }
+    if(type === "answer" && !(answerToMessageID >= 0)){
+        errors.missingData(connection, data.action, "Answer needs answer to MessageID");
+        return;
+    }
+    if(content === null || content === undefined){
+        errors.missingData(connection, data.action, "No content provided");
+        return;
+    }
+
+    pool.getConnection(function(err, databaseConnection) {
+        if (err) throw err;
+        //Check if user is in room and get all other users in room
+        databaseConnection.query("SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?; SELECT `userID` FROM `user_room` WHERE `roomID` = ?", [user, room, room], function (err, resultUsers) {
+            if(err || resultUsers.length === undefined || resultUsers.length !== 2 || resultUsers[0].length < 1 ){
+                databaseConnection.release();
+                errors.missingData(connection, data.action, "User not in Room");
+                return;
+            }
+            //TODO add new Message to room and write to all users
+            databaseConnection.query("INSERT `userID`, `type`, `answerToMessageID`, `content` INTO ? VALUE (?, ?,?,?)", [], function(err, resultMessageCreation){
+                databaseConnection.release();
+                let answerToWebsocket = {
+                    action:data.action,
+                    requestID:data.requestID
+                };
+                if(err || resultMessageCreation.insertId === undefined){
+                    if(err) console.error(new Date(), err);
+                    answerToWebsocket.messageStatus = "invalid";
+                    writeObjectToWebsocket(connection, answerToWebsocket);
+                    return;
+                }
+                answerToWebsocket.messageStatus = "ok";
+                writeObjectToWebsocket(connection, answerToWebsocket);
+
+                let broadcastToAll = {
+                    action:"newMessage",
+                    data:[{
+                        roomID:room,
+                        messages:[{
+                            type:type,
+                            content:content,
+                            answerToMessageID:answerToMessageID,
+                            userID:user,
+                            sendOn:new Date(),
+                            messageID:resultMessageCreation.insertId
+                        }]
+                    }]
+                };
+                for(let i = 0; i < resultUsers[1].length; i++){
+                    const userConnection = connections[resultUsers[1][i]];
+                    if(userConnection){
+                        try{
+                            //Test if connection is still open
+                            if(userConnection.connected && userConnection.closeDescription === null){
+                                writeObjectToWebsocket(userConnection, broadcastToAll);
+                            }
+                        } catch(err){
+                            console.error(new Date() + "Tried to send new message request to a websocket that should still be open.: " + err);
+                        }
+                    }
+                }
+            });
+        });
     });
 }
 
