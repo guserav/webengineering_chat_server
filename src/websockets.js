@@ -50,7 +50,7 @@ function getRooms(connection, data, pool) {
                             });
                         });
                         let getRoomDetails = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `displayName` FROM `Room` WHERE `roomID` = ?", [resultMemberOfRooms[i].roomID], function(err, resultRoomDetails, field){
+                            databaseConnection.query("SELECT `displayName` FROM `room` WHERE `roomID` = ?", [resultMemberOfRooms[i].roomID], function(err, resultRoomDetails, field){
                                 if(err){
                                     reject(err);
                                     return;
