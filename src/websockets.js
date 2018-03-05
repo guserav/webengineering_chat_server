@@ -26,7 +26,7 @@ function getRooms(connection, data, pool) {
 
     pool.getConnection(function(err, databaseConnection){
         if(err) throw err;
-        databaseConnection.query("SELECT `roomID`, `lastMessageRead` FROM `room_user` WHERE `userID` = ?;", [user], function(err, resultMemberOfRooms, field){
+        databaseConnection.query("SELECT `roomID`, `lastMessageRead` FROM `user_room` WHERE `userID` = ?;", [user], function(err, resultMemberOfRooms, field){
             if(err){
                 databaseConnection.release();
                 throw err;
@@ -40,7 +40,7 @@ function getRooms(connection, data, pool) {
                     try{
                         let roomData = {lastReadMessage:resultMemberOfRooms[i].lastMessageRead};
                         let getRoomMember = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `userID`, `lastMessageRead` FROM `room_user` WHERE `roomID` = ?;", [resultMemberOfRooms[i].roomID], function(err, resultRoomMember, field){
+                            databaseConnection.query("SELECT `userID`, `lastMessageRead` FROM `user_room` WHERE `roomID` = ?;", [resultMemberOfRooms[i].roomID], function(err, resultRoomMember, field){
                                 if(err){
                                     reject(err);
                                     return;
@@ -267,7 +267,7 @@ function sendMessage(connection, data, pool, connections) {
  * Creating a RoomMessages_%roomID% Table
  * Adding a message stating that the room has been initialised
  *
- * Adding all users via room_user with last message read initialised to 0
+ * Adding all users via user_room with last message read initialised to 0
  *
  * Writing a response that all users have been successfully added
  * Writing a message to all users that they have been added

@@ -95,7 +95,7 @@ module.exports = {
                     "SET FOREIGN_KEY_CHECKS = 1;"*/
                     "CREATE TABLE `user` ( `userID` VARCHAR(30) NOT NULL PRIMARY KEY, `passwordHash` TEXT NOT NULL , `salt` TEXT NOT NULL) ENGINE = InnoDB;" +
                     "CREATE TABLE `room` ( `roomID` INT NOT NULL AUTO_INCREMENT , `displayName` VARCHAR(200), PRIMARY KEY (`roomID`)) ENGINE = InnoDB;" +
-                    "CREATE TABLE `room_user` ( `roomID` INT NOT NULL, `userID` VARCHAR(30), `lastMessageRead` INT, PRIMARY KEY (`roomID`, `userID`)) ENGINE = InnoDB;";
+                    "CREATE TABLE `user_room` ( `roomID` INT NOT NULL, `userID` VARCHAR(30), `lastMessageRead` INT, PRIMARY KEY (`roomID`, `userID`)) ENGINE = InnoDB;";
 
                 _this.databaseConPool.getConnection(function (err, connection) {
                     if(err){
