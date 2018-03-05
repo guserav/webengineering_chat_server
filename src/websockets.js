@@ -26,7 +26,7 @@ function getRooms(connection, data, pool) {
 
     pool.getConnection(function(err, databaseConnection){
         if(err) throw err;
-        databaseConnection.query("SELECT `roomID`, `lastMessageRead` FROM `room_user` WHERE `userID` = ?", [user], function(err, resultMemberOfRooms, field){
+        databaseConnection.query("SELECT `roomID`, `lastMessageRead` FROM `room_user` WHERE `userID` = ?;", [user], function(err, resultMemberOfRooms, field){
             if(err){
                 databaseConnection.release();
                 throw err;
@@ -40,7 +40,7 @@ function getRooms(connection, data, pool) {
                     try{
                         let roomData = {lastReadMessage:resultMemberOfRooms[i].lastMessageRead};
                         let getRoomMember = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `userID`, `lastMessageRead` FROM `room_user` WHERE `roomID` = ?", [resultMemberOfRooms[i].roomID], function(err, resultRoomMember, field){
+                            databaseConnection.query("SELECT `userID`, `lastMessageRead` FROM `room_user` WHERE `roomID` = ?;", [resultMemberOfRooms[i].roomID], function(err, resultRoomMember, field){
                                 if(err){
                                     reject(err);
                                     return;
@@ -50,7 +50,7 @@ function getRooms(connection, data, pool) {
                             });
                         });
                         let getRoomDetails = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `displayName` FROM `room` WHERE `roomID` = ?", [resultMemberOfRooms[i].roomID], function(err, resultRoomDetails, field){
+                            databaseConnection.query("SELECT `displayName` FROM `room` WHERE `roomID` = ?;", [resultMemberOfRooms[i].roomID], function(err, resultRoomDetails, field){
                                 if(err){
                                     reject(err);
                                     return;
@@ -71,7 +71,7 @@ function getRooms(connection, data, pool) {
                             });
                         });
                         let getLastMessage = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? WHERE `messageID` = MAX(`messageID`)", [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)], function(err, resultLastMessage, field){
+                            databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? WHERE `messageID` = MAX(`messageID`);", [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)], function(err, resultLastMessage, field){
                                 if(err){
                                     reject(err);
                                     return;
@@ -138,7 +138,7 @@ function getMessages(connection, data, pool) {
 
     pool.getConnection(function(err, databaseConnection) {
         if (err) throw err;
-        databaseConnection.query("SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?", [user, room], function(err, result){
+        databaseConnection.query("SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?;", [user, room], function(err, result){
             if(err || result.length === undefined || result.length <= 0){
                 databaseConnection.release();
                 errors.missingData(connection, data.action, "User not in Room");
@@ -204,14 +204,14 @@ function sendMessage(connection, data, pool, connections) {
     pool.getConnection(function(err, databaseConnection) {
         if (err) throw err;
         //Check if user is in room and get all other users in room
-        databaseConnection.query("SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?; SELECT `userID` FROM `user_room` WHERE `roomID` = ?", [user, room, room], function (err, resultUsers) {
+        databaseConnection.query("SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?; SELECT `userID` FROM `user_room` WHERE `roomID` = ?;", [user, room, room], function (err, resultUsers) {
             if(err || resultUsers.length === undefined || resultUsers.length !== 2 || resultUsers[0].length < 1 ){
                 databaseConnection.release();
                 errors.missingData(connection, data.action, "User not in Room");
                 return;
             }
             //TODO add new Message to room and write to all users
-            databaseConnection.query("INSERT `userID`, `type`, `answerToMessageID`, `content` INTO ? VALUE (?, ?,?,?)", [], function(err, resultMessageCreation){
+            databaseConnection.query("INSERT `userID`, `type`, `answerToMessageID`, `content` INTO ? VALUE (?, ?,?,?);", [], function(err, resultMessageCreation){
                 databaseConnection.release();
                 let answerToWebsocket = {
                     action:data.action,
@@ -304,7 +304,7 @@ function createRoom(connection, data, pool, connections) {
 
         //No need to remove duplicates from usersToTest because they don't ruin the sql statement
         await new Promise(function(fulfill, reject){
-            databaseConnection.query("SELECT `userID` FORM `user` WHERE `userID` IN (?)", [usersToTest], function(err, resultCheckUser){
+            databaseConnection.query("SELECT `userID` FORM `user` WHERE `userID` IN (?);", [usersToTest], function(err, resultCheckUser){
                 if(err){
                     reject(err);
                     return;
@@ -386,7 +386,7 @@ function createRoom(connection, data, pool, connections) {
                 }
 
                 // Add all users to the room via adding them in the user_room table
-                databaseConnection.query("INSERT (`roomID`, `userID`, `lastMessageRead`) INTO `user_room` VALUES ?", [arrayToAdd], function(err, resultUsersAdded){
+                databaseConnection.query("INSERT (`roomID`, `userID`, `lastMessageRead`) INTO `user_room` VALUES ?;", [arrayToAdd], function(err, resultUsersAdded){
                     if(err){
                         databaseConnection.release();
                         throw err;
