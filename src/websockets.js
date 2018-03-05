@@ -71,7 +71,7 @@ function getRooms(connection, data, pool) {
                             });
                         });
                         let getLastMessage = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` = MAX(`messageID`);", [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)], function(err, resultLastMessage, field){
+                            databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC LIMIT 1;", [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)], function(err, resultLastMessage, field){
                                 if(err){
                                     reject(err);
                                     return;
