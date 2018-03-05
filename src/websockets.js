@@ -304,7 +304,7 @@ function createRoom(connection, data, pool, connections) {
 
         //No need to remove duplicates from usersToTest because they don't ruin the sql statement
         await new Promise(function(fulfill, reject){
-            databaseConnection.query("SELECT `userID` FORM `user` WHERE `userID` IN (?);", [usersToTest], function(err, resultCheckUser){
+            databaseConnection.query("SELECT `userID` FROM `user` WHERE `userID` IN (?);", [usersToTest], function(err, resultCheckUser){
                 if(err){
                     reject(err);
                     return;
