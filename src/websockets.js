@@ -71,7 +71,7 @@ function getRooms(connection, data, pool) {
                             });
                         });
                         let getLastMessage = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? WHERE `messageID` = MAX(`messageID`);", [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)], function(err, resultLastMessage, field){
+                            databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` = MAX(`messageID`);", [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)], function(err, resultLastMessage, field){
                                 if(err){
                                     reject(err);
                                     return;
@@ -158,15 +158,15 @@ function getMessages(connection, data, pool) {
             const roomTable = buildRoomDatabaseName(room);
             if(data.startFromID !== undefined) {
                 if (data.maxCount !== undefined && data.maxCount > 0) {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? WHERE `messageID` < ? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.startFromID, data.maxCount], callbackQuery);
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` < ? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.startFromID, data.maxCount], callbackQuery);
                 } else {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? WHERE `messageID` < ? ORDER BY `messageID` DESC;", [roomTable, data.startFromID], callbackQuery);
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` < ? ORDER BY `messageID` DESC;", [roomTable, data.startFromID], callbackQuery);
                 }
             } else {
                 if (data.maxCount !== undefined && data.maxCount > 0) {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.maxCount], callbackQuery);
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.maxCount], callbackQuery);
                 } else {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ? ORDER BY `messageID` DESC;", [roomTable], callbackQuery);
+                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC;", [roomTable], callbackQuery);
                 }
 
             }
