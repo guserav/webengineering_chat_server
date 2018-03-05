@@ -103,19 +103,19 @@ function getRooms(connection, data, pool) {
 
             //resolve all Promises and write the response to the websocket
             Promise.all(perRoomPromises).then(function(){
+                databaseConnection.release();
                 writeObjectToWebsocket(connection, {
                     action: data.action,
                     rooms:roomsData
                 });
             }).catch(function(err){
+                databaseConnection.release();
                 writeObjectToWebsocket(connection,{
                     action: data.action,
                     type: "error",
                     message: err.toString()
                 });
                 throw err; // TODO write proper response to connection
-            }).finally(function(){
-                databaseConnection.release();
             });
         });
     });
