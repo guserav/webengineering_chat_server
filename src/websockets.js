@@ -211,7 +211,7 @@ function sendMessage(connection, data, pool, connections) {
                 return;
             }
             //TODO add new Message to room and write to all users
-            databaseConnection.query("INSERT INTO ?(`userID`, `type`, `answerToMessageID`, `content`) VALUE (?, ?,?,?);", [], function(err, resultMessageCreation){
+            databaseConnection.query("INSERT INTO ??(`userID`, `type`, `answerToMessageID`, `content`) VALUE (?, ?,?,?);", [], function(err, resultMessageCreation){
                 databaseConnection.release();
                 let answerToWebsocket = {
                     action:data.action,
@@ -370,8 +370,8 @@ function createRoom(connection, data, pool, connections) {
             const newRoomDatabaseName = buildRoomDatabaseName(newRoomID);
 
             //Create the roomtable and add a creation message to it
-            const queryCreateTableAndAddCreationMessage = "CREATE TABLE ? (`messageID` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `userID` VARCHAR(30), `type` VARCHAR(20), `answerToMessageID` INT, `content` TEXT NOT NULL, `sendOn` DATE NOT NULL DEFAULT CURRENT_TIMESTAMP );" +
-                "INSERT INTO ?(`userID`, `type`, `content`) VALUES (?,?,?);";
+            const queryCreateTableAndAddCreationMessage = "CREATE TABLE ?? (`messageID` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `userID` VARCHAR(30), `type` VARCHAR(20), `answerToMessageID` INT, `content` TEXT NOT NULL, `sendOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP );" +
+                "INSERT INTO ??(`userID`, `type`, `content`) VALUES (?,?,?);";
             const messageRoomCreated = (roomDisplayName === null)?"Hello in your private chat room":"Room was created by " + user + " with name " + roomDisplayName + ".";
             databaseConnection.query(queryCreateTableAndAddCreationMessage, [newRoomDatabaseName, newRoomDatabaseName, user, "system", messageRoomCreated], function(err, resultRoomCreation){
                 if(err){
