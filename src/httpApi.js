@@ -109,6 +109,7 @@ module.exports = {
                             res.status(500).send("Failed to perform query.\n" + JSON.stringify(err));
                             return;
                         }
+                        console.log(new Date() + "Successfully reset database.");
                         res.status(200).send("Successfully performed query.\n" + JSON.stringify(result));
                     });
                 });

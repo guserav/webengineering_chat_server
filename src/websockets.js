@@ -467,9 +467,8 @@ module.exports = {
     setupConnection: function (connection){
         const _this = this;
         connection.on('message', function(message) {
+            //TODO maybe log data of message without token
             if (message.type === 'utf8') {
-                console.log('Received Message: ' + message.utf8Data);
-
                 let data;
                 try {
                     data = JSON.parse(message.utf8Data);
