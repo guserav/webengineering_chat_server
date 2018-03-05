@@ -211,7 +211,7 @@ function sendMessage(connection, data, pool, connections) {
                 return;
             }
             //TODO add new Message to room and write to all users
-            databaseConnection.query("INSERT `userID`, `type`, `answerToMessageID`, `content` INTO ? VALUE (?, ?,?,?);", [], function(err, resultMessageCreation){
+            databaseConnection.query("INSERT INTO ?(`userID`, `type`, `answerToMessageID`, `content`) VALUE (?, ?,?,?);", [], function(err, resultMessageCreation){
                 databaseConnection.release();
                 let answerToWebsocket = {
                     action:data.action,
@@ -359,7 +359,7 @@ function createRoom(connection, data, pool, connections) {
         }
 
         // Create the room in the room table
-        databaseConnection.query("INSERT (`displayName`) INTO `room` VALUE (?);", [roomDisplayName], function(err, resultsRoomCreated){
+        databaseConnection.query("INSERT INTO `room`(`displayName`) VALUE (?);", [roomDisplayName], function(err, resultsRoomCreated){
             if(err){
                 databaseConnection.release();
                 throw err;
@@ -371,7 +371,7 @@ function createRoom(connection, data, pool, connections) {
 
             //Create the roomtable and add a creation message to it
             const queryCreateTableAndAddCreationMessage = "CREATE TABLE ? (`messageID` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `userID` VARCHAR(30), `type` VARCHAR(20), `answerToMessageID` INT, `content` TEXT NOT NULL, `sendOn` DATE NOT NULL DEFAULT CURRENT_TIMESTAMP );" +
-                "INSERT (`userID`, `type`, `content`) INTO ? VALUES (?,?,?);";
+                "INSERT INTO ?(`userID`, `type`, `content`) VALUES (?,?,?);";
             const messageRoomCreated = (roomDisplayName === null)?"Hello in your private chat room":"Room was created by " + user + " with name " + roomDisplayName + ".";
             databaseConnection.query(queryCreateTableAndAddCreationMessage, [newRoomDatabaseName, newRoomDatabaseName, user, "system", messageRoomCreated], function(err, resultRoomCreation){
                 if(err){
@@ -386,7 +386,7 @@ function createRoom(connection, data, pool, connections) {
                 }
 
                 // Add all users to the room via adding them in the user_room table
-                databaseConnection.query("INSERT (`roomID`, `userID`, `lastMessageRead`) INTO `user_room` VALUES ?;", [arrayToAdd], function(err, resultUsersAdded){
+                databaseConnection.query("INSERT INTO `user_room`(`roomID`, `userID`, `lastMessageRead`) VALUES ?;", [arrayToAdd], function(err, resultUsersAdded){
                     if(err){
                         databaseConnection.release();
                         throw err;
