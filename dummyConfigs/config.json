@@ -21,6 +21,7 @@
     "database":"chat_server"
   },
   "http":{
-    "port":"8080"
+    "port":"8080",
+    "corsAllowOrigin":"*"
   }
 }

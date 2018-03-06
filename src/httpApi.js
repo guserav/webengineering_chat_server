@@ -18,6 +18,7 @@ module.exports = {
             const password = req.body.password;
             const user = req.body.user;
 
+            res.set("Access-Control-Allow-Origin", config.http.corsAllowOrigin);
             _this.databaseConPool.getConnection(function(err, connection){
                 if(err) throw err;
                 connection.query('SELECT * FROM `user` WHERE `user`.`userID` = ?', [user], function(err, results, fields){
@@ -48,6 +49,8 @@ module.exports = {
         app.post("/user/create",async function(req, res){
             const password = req.body.password;
             const user = req.body.user;
+
+            res.set("Access-Control-Allow-Origin", config.http.corsAllowOrigin);
             if(password === undefined || user === undefined){
                 res.sendStatus(403);
                 return;

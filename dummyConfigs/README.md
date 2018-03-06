@@ -21,3 +21,4 @@ The config object is passed plain to the database connection therefor it should 
 All options related to the http server
 
 - port: the port to listen on
+- corsAllowOrigin: To write in the http response in the header [Access-Control-Allow-Origin](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin)
