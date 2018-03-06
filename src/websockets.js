@@ -579,8 +579,25 @@ function addPersonToRoom(connection, data, pool, connections) {
     });
 }
 
+/**
+ * Reads the room until the messageID specified in the request.
+ *
+ * Basically updates the row (in user_room) where userID and roomID are the same as specified in the request.
+ * If no row was changed than an error will be send to the websocket else nothing happens.
+ *
+ * @param connection
+ * @param data
+ * @param pool
+ */
 function readRoom(connection, data, pool) {
-    console.error('Method not yet implemented');
+    const user = jwt.decode(data.token).user;
+    const newLastMessage = data.messageID;
+    const room = data.roomID;
+    pool.query("UPDATE `user_room` SET `lastMessageRead` = ? WHERE `roomID` = ? AND `userID` = ?", [newLastMessage, room, user], function(err, result){
+        if(err || result.changedRows !== 1){
+            errors.invalidRequest(connection, data.action, "User not in specified room.", data);
+        }
+    });
 }
 
 const apiEndpoints = { //TODO implement all api endpoints
