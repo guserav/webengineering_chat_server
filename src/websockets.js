@@ -5,6 +5,7 @@
 const tokens = require('./tokens.js');
 const errors = require('./errors.js');
 const jwt = require('jsonwebtoken');
+//TODO add error handling of errors described here: https://github.com/mysqljs/mysql#error-handling
 
 function writeObjectToWebsocket(connection, obj){
     connection.sendUTF(JSON.stringify(obj));
@@ -455,7 +456,7 @@ function createRoom(connection, data, pool, connections) {
  * @param connections
  */
 function addPersonToRoom(connection, data, pool, connections) {
-    const user = jwt.decode(data.token);
+    const user = jwt.decode(data.token).user;
     const userToTest = data.users;
     const room = data.roomID;
 
