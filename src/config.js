@@ -27,5 +27,6 @@ module.exports = {
     },
     database:config.database,
     http:config.http,
+    websocket:config.websocket,
     debug:config.debug
 };

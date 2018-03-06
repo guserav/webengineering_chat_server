@@ -32,10 +32,29 @@ const wsServer = new WebSocketServer({
     autoAcceptConnections: false
 });
 
+/**
+ * Tests if the origin of the request can be accepted
+ * @param request
+ * @returns {boolean}
+ */
 function isRequestAllowed(request) {
-    console.log(new Date() + ' Origin auto accepted: ', request.origin);
-    // TODO maybe add logic here
-    return true;
+    const toAccept = config.websocket.acceptOrigin;
+    if(toAccept){
+        if(!request.order) return false;
+        if(toAccept.length){ // Go through array of origins
+            for(let i = 0; i < toAccept.length; i++){
+                if(toAccept[i] === request.origin){
+                    return true;
+                }
+            }
+            return false; //No acceptable origin found
+        } else {
+            return toAccept === request.origin;
+        }
+    } else {
+        console.log(new Date() + ' Origin auto accepted: ', request.origin);
+        return true;
+    }
 }
 
 wsServer.on('request', function(request) {
@@ -45,7 +64,7 @@ wsServer.on('request', function(request) {
         return;
     }
 
-    let connection = request.accept(null, request.origin); //TODO maybe specify protocol
+    let connection = request.accept(null, request.origin); //specify protocol with none
     console.log((new Date()) + ' Connection accepted.');
     websocketLogic.setupConnection(connection);
 });

@@ -20,6 +20,9 @@
     "port":"3306",
     "database":"chat_server"
   },
+  "websocket":{
+    "acceptOrigin":null
+  },
   "http":{
     "port":"8080",
     "corsAllowOrigin":"*"

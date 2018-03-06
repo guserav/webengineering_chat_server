@@ -17,6 +17,9 @@ Includes the all options related to JavascriptWebTokens.
 All options for the database pool connection.
 The config object is passed plain to the database connection therefor it should have the form of the [specification](https://github.com/mysqljs/mysql#pool-options)
 
+## websocket
+
+- acceptOrigin a String or an array of string for the origins to accept for a websocket connection
 ## http
 All options related to the http server
 
