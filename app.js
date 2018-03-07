@@ -6,6 +6,7 @@ const express = require('express');
 const httpApi = require('./src/httpApi.js');
 const mysql = require('mysql');
 const mysqlTools = require('./src/mysql.js');
+const path = require('path');
 
 // Initiate Database
 const pool = mysql.createPool(Object.assign({multipleStatements:true}, config.database));
@@ -14,6 +15,7 @@ mysqlTools.query(pool, "SELECT * FROM `user_room` LIMIT 1;SELECT * FROM `user` L
     console.log(new Date() + " Database available.");
     // HTTP Api init
     const app = express();
+    app.use('/frontend', express.static(path.join(__dirname, '/chatfrontend')));
     httpApi.setDatabaseConnectionPool(pool);
     httpApi.initialiseApp(app);
     const server = http.createServer(app);
