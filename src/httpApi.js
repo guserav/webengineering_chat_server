@@ -5,6 +5,14 @@ const scrypt = require('js-scrypt');
 const randomNumber = require("random-number-csprng");
 const mysql = require('./mysql.js');
 
+function setCORSHeader(req, res, next){
+    res.set("Access-Control-Allow-Origin", config.http.corsAllowOrigin);
+    res.set("Access-Control-Allow-Methods", "DELETE, HEAD, GET, OPTIONS, POST, PUT");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Content-Range, Content-Disposition, Content-Description");
+    res.set("Access-Control-Max-Age", "60");
+    next();
+}
+
 module.exports = {
     setDatabaseConnectionPool: function(pool){
         if(!pool) console.error(new Date() + " Database connection not valid");
@@ -15,11 +23,11 @@ module.exports = {
         const _this = this;
 
         app.use(bodyParser.json());
+        app.use(setCORSHeader); //Set CORS header for every request
         app.post("/user/newToken",async function(req, res){
             const password = req.body.password;
             const user = req.body.user;
 
-            res.set("Access-Control-Allow-Origin", config.http.corsAllowOrigin);
             _this.databaseConPool.getConnection(function(err, connection){
                 if(err) throw err;
                 connection.query('SELECT * FROM `user` WHERE `user`.`userID` = ?', [user], function(err, results, fields){
@@ -51,7 +59,6 @@ module.exports = {
             const password = req.body.password;
             const user = req.body.user;
 
-            res.set("Access-Control-Allow-Origin", config.http.corsAllowOrigin);
             if(password === undefined || user === undefined){
                 res.sendStatus(403);
                 return;
