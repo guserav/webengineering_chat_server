@@ -1,0 +1,3 @@
+[submodule "chatfrontend"]
+	path = chatfrontend
+	url = https://github.com/jpyen/chatfrontend.git
