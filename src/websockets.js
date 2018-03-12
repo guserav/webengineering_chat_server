@@ -336,7 +336,7 @@ function createRoom(connection, data, pool, connections) {
 
         let usersNotAdded = [];
         //Filter all users that have not been added
-        for(let i = 0; i < usersToTest; i++){
+        for(let i = 0; i < usersToTest.length; i++){
             let found = false;
             for(let j = 0; j < existingUsers; j++){
                 if(usersToTest[i] === existingUsers[j]){
@@ -437,7 +437,7 @@ function createRoom(connection, data, pool, connections) {
                             }]
                         }]
                     };
-                    for(let i = 0; i < existingUsers; i++){
+                    for(let i = 0; i < existingUsers.length; i++){
                         const userConnection = connections[existingUsers[i]];
                         if(userConnection){
                             try{
