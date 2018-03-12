@@ -1,10 +1,10 @@
 /*
  * This file contains all code handling the websocket requests
- * TODO implement notifications for new messages
  */
 const tokens = require('./tokens.js');
 const errors = require('./errors.js');
 const jwt = require('jsonwebtoken');
+const mysql = require('./mysql.js');
 //TODO add error handling of errors described here: https://github.com/mysqljs/mysql#error-handling
 
 function writeObjectToWebsocket(connection, obj){
@@ -22,104 +22,103 @@ function buildRoomDatabaseName(roomID){
  * @param data the data of the request
  * @param pool the database connection pool
  */
-function getRooms(connection, data, pool) {
+async function getRooms(connection, data, pool) {
     const user = jwt.decode(data.token).user;
 
-    pool.getConnection(function(err, databaseConnection){
-        if(err) throw err;
-        databaseConnection.query("SELECT `roomID`, `lastMessageRead` FROM `user_room` WHERE `userID` = ?;", [user], function(err, resultMemberOfRooms, field){
-            if(err){
-                databaseConnection.release();
-                throw err;
-            }
-            //If the user doesn't exist or is in no rooms than he will receive an empty answer
+    let databaseConnection = null;
+    try {
+        databaseConnection = await mysql.getConnection(pool);
+        const resultMemberOfRooms = await mysql.query(
+            databaseConnection,
+            "SELECT `roomID`, `lastMessageRead` FROM `user_room` WHERE `userID` = ?;",
+            [user],
+            true
+        );
+        //If the user doesn't exist or is in no rooms than he will receive an empty answer
 
-            let perRoomPromises = [];
-            let roomsData = [];
-            for(let i = 0; i < resultMemberOfRooms.length; i++){
-                perRoomPromises.push(new Promise(function(fulfill, reject){
-                    try{
-                        let roomData = {lastReadMessage:resultMemberOfRooms[i].lastMessageRead};
-                        let getRoomMember = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `userID`, `lastMessageRead` FROM `user_room` WHERE `roomID` = ?;", [resultMemberOfRooms[i].roomID], function(err, resultRoomMember, field){
-                                if(err){
-                                    reject(err);
-                                    return;
-                                }
-                                roomData.members = resultRoomMember;
-                                fulfill(null);
-                            });
-                        });
-                        let getRoomDetails = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `displayName` FROM `room` WHERE `roomID` = ?;", [resultMemberOfRooms[i].roomID], function(err, resultRoomDetails, field){
-                                if(err){
-                                    reject(err);
-                                    return;
-                                }
-                                if(resultRoomDetails.length !== 1){
-                                    console.error(new Date() + "RoomID not found or roomID not unique. Possible that integrity is destroyed.", resultRoomDetails);
-                                    reject(new Error("Can't find RoomID"));
-                                    return;
-                                }
-                                if(resultRoomDetails[0].displayName === null){
-                                    //is private Room
-                                    roomData.roomType = "private";
-                                }else{
-                                    roomData.roomType = "public";
-                                    roomData.roomName = resultRoomDetails[0].displayName;
-                                }
-                                fulfill(null);
-                            });
-                        });
-                        let getLastMessage = new Promise(function (fulfill, reject) {
-                            databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC LIMIT 1;", [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)], function(err, resultLastMessage, field){
-                                if(err){
-                                    reject(err);
-                                    return;
-                                }
-                                if(resultLastMessage.length !== 1){
-                                    console.error(new Date() + "Expected only on message messageID is not unique", resultLastMessage);
-                                    reject(new Error("Can't fetch last message"));
-                                    return;
-                                }
-                                roomData.lastMessage = resultLastMessage;
-                                fulfill(null);
-                            });
-                        });
+        //Generate a Promise per room that retrieves all information
+        let perRoomPromises = [];
+        let roomsData = [];
+        for(let i = 0; i < resultMemberOfRooms.length; i++){
+            perRoomPromises.push(new Promise(function(fulfill, reject){
+                try{
+                    //Fetching all users in the room
+                    let roomData = {lastReadMessage:resultMemberOfRooms[i].lastMessageRead};
+                    let getRoomMember = mysql.query(
+                        databaseConnection,
+                        "SELECT `userID`, `lastMessageRead` FROM `user_room` WHERE `roomID` = ?;",
+                        [resultMemberOfRooms[i].roomID],
+                        false
+                    ).then(function(res){
+                        roomData.members = res;
+                    });
 
-                        Promise.all([getRoomMember, getRoomDetails, getLastMessage]).then(function(){
-                            if(roomData.roomType === "private"){
-                                roomData.roomName = (roomData.members[0].userID === user)? roomData.members[1].userID : roomsData.members[0].userID;
-                            }
-                            roomsData.push(roomData);
-                            fulfill(roomData);
-                        }).catch(function(err){
-                            reject(err);
-                        });
-                    }catch(ex){
-                        reject(ex);
-                    }
-                }));
-            }
+                    //Fetch room details (public/private) and room name
+                    let getRoomDetails = mysql.query(
+                        databaseConnection,
+                        "SELECT `displayName` FROM `room` WHERE `roomID` = ?;",
+                        [resultMemberOfRooms[i].roomID],
+                        false //Don't want release on failure
+                    ).then(function(resultRoomDetails){
+                        if(resultRoomDetails.length !== 1){
+                            console.error(new Date() + "RoomID not found or roomID not unique. Possible that integrity is destroyed.", resultRoomDetails);
+                            throw new Error("Can't find RoomID");
+                        }
+                        if(resultRoomDetails[0].displayName === null){
+                            //this means the room is a private Room
+                            roomData.roomType = "private";
+                        }else{
+                            roomData.roomType = "public";
+                            roomData.roomName = resultRoomDetails[0].displayName;
+                        }
+                    });
 
-            //resolve all Promises and write the response to the websocket
-            Promise.all(perRoomPromises).then(function(){
-                databaseConnection.release();
-                writeObjectToWebsocket(connection, {
-                    action: data.action,
-                    rooms:roomsData
-                });
-            }).catch(function(err){
-                databaseConnection.release();
-                writeObjectToWebsocket(connection,{
-                    action: data.action,
-                    type: "error",
-                    message: err.toString()
-                });
-                throw err; // TODO write proper response to connection
-            });
+                    //Get last Message of the room
+                    let getLastMessage = mysql.query(
+                        databaseConnection,
+                        "SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC LIMIT 1;",
+                        [buildRoomDatabaseName(resultMemberOfRooms[i].roomID)],
+                        false
+                    ).then(function(resultLastMessage){
+                        if(resultLastMessage.length !== 1){
+                            console.error(new Date() + "Expected only on message or messageID is not unique", resultLastMessage);
+                            throw new Error("Can't fetch last message");
+                        }
+                        roomData.lastMessage = resultLastMessage;
+                    });
+
+                    Promise.all([getRoomMember, getRoomDetails, getLastMessage]).then(function(){
+                        if(roomData.roomType === "private"){ //For private rooms auto set the room Name to that of the other participant
+                            roomData.roomName = (roomData.members[0].userID === user)? roomData.members[1].userID : roomsData.members[0].userID;
+                        }
+                        roomsData.push(roomData);
+                        fulfill(roomData);
+                    }).catch(function(err){
+                        reject(err);
+                    });
+                }catch(ex){
+                    reject(ex);
+                }
+            }));
+        }
+
+        //resolve all Promises and write the response to the websocket
+        await Promise.all(perRoomPromises);
+        databaseConnection.release();
+        databaseConnection = null;
+        writeObjectToWebsocket(connection, {
+            action: data.action,
+            rooms:roomsData
         });
-    });
+    } catch (err){
+        console.error(new Date() + " Error while fetching room data", err);
+        if(databaseConnection) databaseConnection.release();
+        writeObjectToWebsocket(connection,{
+            action: data.action,
+            type: "error",
+            message: err.toString()
+        });
+    }
 }
 
 /**
