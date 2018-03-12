@@ -51,5 +51,26 @@ module.exports = {
                 accept(result);
             });
         });
+    },
+
+    /**
+     * Returns a Promise that resolves into a database connection or an error if the acquiring fails.
+     * @param pool The Database pool to fetch a connection from.
+     * @returns {Promise}
+     */
+    getConnection:function(pool){
+        return new Promise(function(accept, reject){
+            pool.getConnection(function(err, connection){
+                if(err){
+                    console.error(new Date() + " Failed to acquire a connection from the pool", err);
+                    reject(err);
+                }else if(!connection){
+                    console.error(new Date() + " No Connection object received and no error");
+                    reject(new Error("No connection aquired"));
+                }else{
+                    accept(connection);
+                }
+            });
+        });
     }
 };
