@@ -3,6 +3,7 @@ const util = require('util');
 const INVALID_WEBSOCKET_REQUEST= "Invalid_Request";
 const INVALID_TOKEN = {code:1003, description:"Invalid token '%s' provided"};
 const INVALID_REQUEST = "Invalid Request";
+const INTERNAL_SERVER_ERROR = "Internel Server Error";
 
 const newWebsocketError = function (type, message) {
     return {
@@ -49,5 +50,11 @@ module.exports = {
         const dataCopy = Object.assign({}, basedOnRequestData);
         dataCopy.token = undefined;
         writeErrorToWebsocket(connection, newWebsocketErrorForAction(INVALID_REQUEST, "Invalid Request(" + message + "): "+ JSON.stringify(dataCopy), action));
+    },
+
+    internalServerError: function(connection, action, basedOnRequestData){
+        const dataCopy = Object.assign({}, basedOnRequestData);
+        dataCopy.token = undefined;
+        writeErrorToWebsocket(connection, newWebsocketErrorForAction(INTERNAL_SERVER_ERROR, "Internal server Error for request: "+ JSON.stringify(dataCopy), action));
     }
 };

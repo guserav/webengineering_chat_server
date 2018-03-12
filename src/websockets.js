@@ -113,11 +113,7 @@ async function getRooms(connection, data, pool) {
     } catch (err){
         console.error(new Date() + " Error while fetching room data", err);
         if(databaseConnection) databaseConnection.release();
-        writeObjectToWebsocket(connection,{
-            action: data.action,
-            type: "error",
-            message: err.toString()
-        });
+        errors.internalServerError(connection, data.action, data);
     }
 }
 
