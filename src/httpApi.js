@@ -92,6 +92,15 @@ module.exports = {
         });
 
         if(config.debug === true){
+            app.get("/debug", function(req, res){//Return links for easy access of debug enpoints
+                res.send(
+                    "<a href='/displayTables'>display Tables</a><br/>" +
+                    "<a href='/displayTables?table=room'>room</a><br/>" +
+                    "<a href='/displayTables?table=user_room'>user_room</a><br/>" +
+                    "<a href='/displayTables?table=user'>user</a><br/>"
+                );
+            });
+
             app.get("/resetDatabase", function(req, res){
                 mysql.resetDatabase(_this.databaseConPool, function(err, result){
                     if(err){
