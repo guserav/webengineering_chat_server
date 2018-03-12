@@ -23,10 +23,28 @@ module.exports = {
         databaseConPool.query(dropAllTable, callback);
     },
 
-    query:function(databaseConnection, sqlQuery, data){
+    /**
+     * Query the specified query on the given connection or pool.
+     *
+     * On error the connection will be released to the pool if it was generated from a pool.
+     *
+     * @param databaseConnection a pool or database Connection generated from the pool
+     * @param sqlQuery The query to perform can have ? to be filled with data
+     * @param data The data array to fill in the escaped query
+     * @param isPoolConnection must be true if the connection is from a pool and should be destroyed / released on failure
+     * @returns {Promise}
+     */
+    query:function(databaseConnection, sqlQuery, data, isPoolConnection){
         return new Promise(function(accept, reject){
             databaseConnection.query(sqlQuery, data?data:[], function(err, result){
                 if(err){
+                    if(err.fatal){ // connection terminated
+                        if(isPoolConnection) databaseConnection.destroy();
+                        console.error(new Date() + " Database connection terminated before performing query", err);
+                    } else {
+                        if(isPoolConnection) databaseConnection.release();
+                        console.log(new Date() + " Error while performing query.", err);
+                    }
                     reject(err);
                     return;
                 }
