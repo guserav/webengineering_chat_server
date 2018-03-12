@@ -13,6 +13,10 @@ function setCORSHeader(req, res, next){
     next();
 }
 
+function writeObjectToWebpage(res, obj){
+    res.write("<pre>" + JSON.stringify(obj, null, 2) + "</pre>");
+}
+
 module.exports = {
     setDatabaseConnectionPool: function(pool){
         if(!pool) console.error(new Date() + " Database connection not valid");
@@ -98,6 +102,20 @@ module.exports = {
                     console.log(new Date() + "Successfully reset database.");
                     res.status(200).send("Successfully performed query.\n" + JSON.stringify(result));
                 });
+            });
+
+            app.get("/displayTable", async function(req, res) {
+                try {
+                    if (req.query.table){
+                        writeObjectToWebpage(res, await mysql.query(_this.databaseConPool, "SELECT * FROM ??;", [req.query.table]));
+                    }else{
+                        writeObjectToWebpage(res, await mysql.query(_this.databaseConPool, "SELECT table_name FROM information_schema.tables WHERE table_schema = (SELECT DATABASE());"));
+                    }
+                    res.write("<a href='/displayTable?table='>/displayTable?table=</a>");
+                    res.end();
+                } catch (err){
+                    res.sendStatus(500);
+                }
             });
         }
     }
