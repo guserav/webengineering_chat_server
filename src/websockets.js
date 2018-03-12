@@ -43,7 +43,10 @@ async function getRooms(connection, data, pool) {
             perRoomPromises.push(new Promise(function(fulfill, reject){
                 try{
                     //Fetching all users in the room
-                    let roomData = {lastReadMessage:resultMemberOfRooms[i].lastMessageRead};
+                    let roomData = {
+                        lastReadMessage:resultMemberOfRooms[i].lastMessageRead,
+                        roomID:resultMemberOfRooms[i].roomID
+                    };
                     let getRoomMember = mysql.query(
                         databaseConnection,
                         "SELECT `userID`, `lastMessageRead` FROM `user_room` WHERE `roomID` = ?;",
