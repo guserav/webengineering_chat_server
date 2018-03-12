@@ -128,46 +128,68 @@ async function getRooms(connection, data, pool) {
  * @param data
  * @param pool
  */
-function getMessages(connection, data, pool) {
+async function getMessages(connection, data, pool) {
     const user = jwt.decode(data.token).user;
     const room = data.room;
 
-    pool.getConnection(function(err, databaseConnection) {
-        if (err) throw err;
-        databaseConnection.query("SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?;", [user, room], function(err, result){
-            if(err || result.length === undefined || result.length <= 0){
-                databaseConnection.release();
-                errors.missingData(connection, data.action, "User not in Room");
-                return;
-            }
+    let databaseConnection = null;
+    try {
+        databaseConnection = await mysql.getConnection(pool);
+        const resultCheckUserInRoom = await mysql.query(
+            databaseConnection,
+            "SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?;",
+            [user, room],
+            true
+        );
 
-            const callbackQuery = function (err, resultMessages) {
-                databaseConnection.release();
-                if (err) throw err;
-                let websocketResponse = {
-                    action: data.action,
-                    messages: resultMessages.reverse()
-                };
-                writeObjectToWebsocket(connection, websocketResponse);
-            };
-            //TODO deside wich query to user based on maxCount and startFromID
-            const roomTable = buildRoomDatabaseName(room);
-            if(data.startFromID !== undefined) {
-                if (data.maxCount !== undefined && data.maxCount > 0) {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` < ? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.startFromID, data.maxCount], callbackQuery);
-                } else {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` < ? ORDER BY `messageID` DESC;", [roomTable, data.startFromID], callbackQuery);
-                }
+        if(resultCheckUserInRoom.length === undefined || resultCheckUserInRoom.length <= 0){
+            databaseConnection.release();
+            errors.missingData(connection, data.action, "User not in Room");
+            return;
+        }
+
+        let resultMessages;
+        const roomTable = buildRoomDatabaseName(room);
+        if(data.startFromID !== undefined) {
+            if (data.maxCount !== undefined && data.maxCount > 0) {
+                resultMessages = await mysql.query(
+                    databaseConnection,
+                    "SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` < ? ORDER BY `messageID` DESC LIMIT ?;",
+                    [roomTable, data.startFromID, data.maxCount],
+                    true);
             } else {
-                if (data.maxCount !== undefined && data.maxCount > 0) {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC LIMIT ?;", [roomTable, data.maxCount], callbackQuery);
-                } else {
-                    databaseConnection.query("SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC;", [roomTable], callbackQuery);
-                }
-
+                resultMessages = await mysql.query(
+                    databaseConnection,
+                    "SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? WHERE `messageID` < ? ORDER BY `messageID` DESC;",
+                    [roomTable, data.startFromID],
+                    true);
             }
-        });
-    });
+        } else {
+            if (data.maxCount !== undefined && data.maxCount > 0) {
+                resultMessages = await mysql.query(
+                    databaseConnection,
+                    "SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC LIMIT ?;",
+                    [roomTable, data.maxCount],
+                    true);
+            } else {
+                resultMessages = await mysql.query(
+                    databaseConnection,
+                    "SELECT `messageID`, `userID`, `type`, `answerToMessageID`, `content`, `sendOn` FROM ?? ORDER BY `messageID` DESC;",
+                    [roomTable],
+                    true);
+            }
+        }
+
+        databaseConnection.release();
+        let websocketResponse = {
+            action: data.action,
+            messages: resultMessages.reverse()
+        };
+        writeObjectToWebsocket(connection, websocketResponse);
+    } catch (err){
+        console.log(new Date() + " Error while retrieving room data", err);
+        errors.internalServerError(connection, data.action, data);
+    }
 }
 
 /**
