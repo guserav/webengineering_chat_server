@@ -255,7 +255,7 @@ async function sendMessage(connection, data, pool, connections) {
         const resultMessageCreation = await mysql.query(
             databaseConnection,
             "INSERT INTO ??(`userID`, `type`, `answerToMessageID`, `content`) VALUE (?, ?,?,?);",
-            [],
+            [buildRoomDatabaseName(room), user, type, answerToMessageID, content],
             true
         );
         databaseConnection.release();
