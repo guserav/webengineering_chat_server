@@ -672,15 +672,24 @@ async function addPersonToRoom(connection, data, pool, connections) {
  * @param data
  * @param pool
  */
-function readRoom(connection, data, pool) {
+async function readRoom(connection, data, pool) {
     const user = jwt.decode(data.token).user;
     const newLastMessage = data.messageID;
     const room = data.roomID;
-    pool.query("UPDATE `user_room` SET `lastMessageRead` = ? WHERE `roomID` = ? AND `userID` = ?", [newLastMessage, room, user], function(err, result){
-        if(err || result.changedRows !== 1){
+
+    try {
+        let result = await mysql.query(
+            pool,
+            "UPDATE `user_room` SET `lastMessageRead` = ? WHERE `roomID` = ? AND `userID` = ?",
+            [newLastMessage, room, user]
+        );
+        if(result.changedRows !== 1){
             errors.invalidRequest(connection, data.action, "User not in specified room.", data);
         }
-    });
+    } catch (err){
+        console.log(new Date() + " Error while marking room as read", err);
+        errors.invalidRequest(connection, data.action, "User not in specified room.", data);
+    }
 }
 
 const apiEndpoints = { //TODO implement all api endpoints
