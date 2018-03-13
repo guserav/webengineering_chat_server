@@ -517,7 +517,7 @@ async function createRoom(connection, data, pool, connections) {
  * @param pool
  * @param connections
  */
-function addPersonToRoom(connection, data, pool, connections) {
+async function addPersonToRoom(connection, data, pool, connections) {
     const user = jwt.decode(data.token).user;
     const userToTest = data.users;
     const room = data.roomID;
@@ -527,119 +527,139 @@ function addPersonToRoom(connection, data, pool, connections) {
         return;
     }
 
-    pool.getConnection(function(err, databaseConnection){
-        if(err) throw err;
-        const sqlTestValidaty = "SELECT `displayName` FROM `room` WHERE `roomID` = ?;" +
+    let databaseConnection = null;
+    try {
+        databaseConnection = await mysql.getConnection(pool);
+
+
+        let resultTestValidaty = await mysql.query(
+            databaseConnection,
+            "SELECT `displayName` FROM `room` WHERE `roomID` = ?;" +
             "SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?;" +
             "SELECT `userID` FROM `user_room` WHERE `roomID` = ?;" +
             //Get all valid user names that are not already added to the group
             "(SELECT `userID` FROM `user` WHERE `userID` IN (?)) MINUS (SELECT `userID` FROM `user_room` WHERE `roomID` = ?);" +
-            "SELECT `messageID` FROM ?? ORDER BY `messageID` DESC LIMIT 1;";
-        databaseConnection.query(sqlTestValidaty, [room, user, room, room, userToTest, room, buildRoomDatabaseName(room)], function(err, resultTestValidaty){
-            if(err || resultTestValidaty.length !== 5 || resultTestValidaty[1].length !== 1){
-                databaseConnection.release();
-                //TODO write answer to websocket
-                errors.invalidRequest(connection, data.action, "User can't add persons to room he isn't in himself.", data);
-                return;
-            }
-            //Test if private room
-            if(resultTestValidaty[0][0].displayName === undefined || resultTestValidaty[0][0].displayName === null){
-                databaseConnection.release();
-                errors.invalidRequest(connection, data.action, "Cant't add user to private room.", data);
-                return;
-            }
+            "SELECT `messageID` FROM ?? ORDER BY `messageID` DESC LIMIT 1;",
+            [room, user, room, room, userToTest, room, buildRoomDatabaseName(room)],
+            true
+        );
 
-            const usersInRoom = resultTestValidaty[2];
-            const usersToAdd = resultTestValidaty[3];
-            const lastMessageID = resultTestValidaty[4][0].messageID;
+        if(resultTestValidaty.length !== 5 || resultTestValidaty[1].length !== 1){
+            databaseConnection.release();
+            errors.invalidRequest(connection, data.action, "User can't add persons to room he isn't in himself.", data);
+            return;
+        }
+        //Test if private room
+        if(resultTestValidaty[0][0].displayName === undefined || resultTestValidaty[0][0].displayName === null){
+            databaseConnection.release();
+            errors.invalidRequest(connection, data.action, "Cant't add user to private room.", data);
+            return;
+        }
 
-            if(usersToAdd === undefined || !(usersToAdd.length > 0)){
-                databaseConnection.release();
-                //TODO maybe change to answer with status invalid
-                errors.missingData(connection, data.action, "No valid users to Add");
-                return;
+        const usersInRoom = resultTestValidaty[2];
+        const usersToAdd = resultTestValidaty[3];
+        const lastMessageID = resultTestValidaty[4][0].messageID;
+
+        if(usersToAdd === undefined || !(usersToAdd.length > 0)){
+            databaseConnection.release();
+            //TODO maybe change to answer with status invalid
+            errors.missingData(connection, data.action, "No valid users to Add");
+            return;
+        }
+
+        let usersNotAdded = [];
+        //Filter all users that have not been added
+        for(let i = 0; i < userToTest; i++){
+            let found = false;
+            for(let j = 0; j < usersToAdd; j++){
+                if(userToTest[i] === usersToAdd[j]){
+                    found = true;
+                }
             }
-
-            let usersNotAdded = [];
-            //Filter all users that have not been added
-            for(let i = 0; i < userToTest; i++){
-                let found = false;
-                for(let j = 0; j < usersToAdd; j++){
-                    if(userToTest[i] === usersToAdd[j]){
+            if(!found){
+                //Prevent adding duplicates to usersNotAdded
+                for(let j = 0; j < usersNotAdded.length; j++){
+                    if(usersNotAdded[j] === userToTest[i]){
                         found = true;
                     }
                 }
                 if(!found){
-                    //Prevent adding duplicates to usersNotAdded
-                    for(let j = 0; j < usersNotAdded.length; j++){
-                        if(usersNotAdded[j] === userToTest[i]){
-                            found = true;
-                        }
-                    }
-                    if(!found){
-                        usersNotAdded.push(userToTest[i]);
-                    }
+                    usersNotAdded.push(userToTest[i]);
                 }
             }
+        }
 
-            //Building array of values to add
-            let arrayToAdd = [];
-            for(let i = 0; i < usersToAdd.length; i++){
-                arrayToAdd.push([room, usersToAdd[i], lastMessageID]);
-            }
+        //Building array of values to add
+        let arrayToAdd = [];
+        for(let i = 0; i < usersToAdd.length; i++){
+            arrayToAdd.push([room, usersToAdd[i], lastMessageID]);
+        }
 
-            const USER_ADDED_MESSAGE = "Users where added to the room";
-            databaseConnection.query("INSERT INTO `user_room`(`roomID`, `userID`) VALUES (?);INSERT INTO ??(`type`, `userID`, `content`) VALUES (?,?,?);", [usersToAdd, buildRoomDatabaseName(room), "system", user, USER_ADDED_MESSAGE], function(err, resultAddingcwUsers){
-                databaseConnection.release();
-                if(err){
-                    console.log(new Date(), err);
-                    writeObjectToWebsocket(connection, {
-                        action:data.action,
-                        room_status:"invalid",
-                        roomID:room,
-                        invalid_users:userToTest
-                    });
-                    return;
-                }
-                let answer = {
-                    action:data.action,
-                    room_status:(usersNotAdded.length > 0)?"partially added users":"ok",
-                    roomID:room,
-                    invalidUsers:usersNotAdded
-                };
-                writeObjectToWebsocket(connection, answer);
-                let newMessageNotification = {
-                    action:"newMessages",
-                    data:[{
-                        roomID:room,
-                        messages:[{
-                            type:"system",
-                            userID:user,
-                            content:USER_ADDED_MESSAGE,
-                            sendOn:new Date(),
-                            messageID:resultAddingcwUsers[1].insertId
-                        }]
-                    }]
-                };
-                let writeAnswer = function(val){
-                    const userConnection = connections[val];
-                    if(userConnection){
-                        try{
-                            //Test if connection is still open
-                            if(userConnection.connected && userConnection.closeDescription === null){
-                                writeObjectToWebsocket(userConnection, newMessageNotification);
-                            }
-                        } catch(err){
-                            console.error(new Date() + "Tried to send new message request to a websocket that should still be open.: " + err);
-                        }
-                    }
-                };
-                usersToAdd.forEach(writeAnswer);
-                usersInRoom.forEach(writeAnswer);
+        const USER_ADDED_MESSAGE = "Users where added to the room";
+        let resultAddingUsers;
+        try {
+            resultAddingUsers = await mysql.query(
+                databaseConnection,
+                "INSERT INTO `user_room`(`roomID`, `userID`) VALUES (?);INSERT INTO ??(`type`, `userID`, `content`) VALUES (?,?,?);",
+                [usersToAdd, buildRoomDatabaseName(room), "system", user, USER_ADDED_MESSAGE],
+                true
+            );
+        } catch (err){
+            console.log(new Date(), err);
+            writeObjectToWebsocket(connection, {
+                action:data.action,
+                room_status:"invalid",
+                roomID:room,
+                invalid_users:userToTest
             });
+            return;
+        }
 
-        });
-    });
+        let answer = {
+            action:data.action,
+            room_status:(usersNotAdded.length > 0)?"partially added users":"ok",
+            roomID:room,
+            invalidUsers:usersNotAdded
+        };
+        writeObjectToWebsocket(connection, answer);
+        let newMessageNotification = {
+            action:"newMessages",
+            data:[{
+                roomID:room,
+                messages:[{
+                    type:"system",
+                    userID:user,
+                    content:USER_ADDED_MESSAGE,
+                    sendOn:new Date(),
+                    messageID:resultAddingUsers[1].insertId
+                }]
+            }]
+        };
+        let writeAnswer = function(val){
+            const userConnection = connections[val];
+            if(userConnection){
+                try{
+                    //Test if connection is still open
+                    if(userConnection.connected && userConnection.closeDescription === null){
+                        writeObjectToWebsocket(userConnection, newMessageNotification);
+                    }
+                } catch(err){
+                    console.error(new Date() + "Tried to send new message request to a websocket that should still be open.: " + err);
+                }
+            }
+        };
+        usersToAdd.forEach(writeAnswer);
+        usersInRoom.forEach(writeAnswer);
+    } catch (err){
+        console.log(new Date() + " Error while adding user to room", err);
+        errors.internalServerError(connection, data.action, data);
+    } finally {
+        try {
+            if (databaseConnection) databaseConnection.release();
+        } catch (err){
+            console.log(new Date() + " Error while releasing database connection");
+        }
+    }
 }
 
 /**
