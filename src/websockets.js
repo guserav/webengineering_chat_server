@@ -20,7 +20,6 @@ module.exports = {
     setupConnection: function (connection){
         const _this = this;
         connection.on('message', function(message) {
-            //TODO maybe log data of message without token
             if (message.type === 'utf8') {
                 let data;
                 try {

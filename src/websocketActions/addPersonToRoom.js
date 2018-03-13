@@ -63,7 +63,6 @@ module.exports = async function(connection, data, pool, connections) {
 
         if(usersToAdd === undefined || !(usersToAdd.length > 0)){
             databaseConnection.release();
-            //TODO maybe change to answer with status invalid
             errors.missingData(connection, data.action, "No valid users to Add");
             return;
         }
