@@ -23,7 +23,7 @@ module.exports = async function(connection, data, pool, connections) {
     const userToTest = data.users;
     const room = data.roomID;
 
-    if(userToTest === undefined || userToTest.length > 0){
+    if(userToTest === undefined || userToTest.length <= 0){
         errors.missingData(connection, data.action, "To add users they need to be specified.");
         return;
     }
