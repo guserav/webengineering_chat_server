@@ -28,8 +28,8 @@ module.exports = async function(connection, data, pool, connections) {
         errors.missingData(connection, data.action, "roomName must be set.");
         return;
     }
-    if(data.invite === null || data.invite === undefined){
-        errors.missingData(connection, data.action, "invite must be set.");
+    if(data.invite === null || data.invite === undefined || typeof data.invite === "string" || data.invite instanceof String){
+        errors.missingData(connection, data.action, "invite must be set and a array.");
         return;
     }
 
