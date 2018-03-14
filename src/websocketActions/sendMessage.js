@@ -82,7 +82,7 @@ module.exports = async function(connection, data, pool, connections) {
             }]
         };
 
-        utils.writeObjToAllUsers(resultUserInRoom, connections, broadcastToAll);
+        utils.writeObjToAllUsers(resultUserInRoom[1].map((e) => e.userID), connections, broadcastToAll);
     } catch (err){
         console.log(new Date() + " Error while sending message", err);
         errors.internalServerError(connection, data.action, data);

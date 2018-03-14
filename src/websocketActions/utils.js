@@ -35,8 +35,8 @@ module.exports = {
      * @param broadcastToAll The object to send
      */
     writeObjToAllUsers:function (users, connections, broadcastToAll) {
-        for (let i = 0; i < users[1].length; i++) {
-            const userConnection = connections[users[1][i]];
+        for (let i = 0; i < users.length; i++) {
+            const userConnection = connections[users[i]];
             if (userConnection) {
                 try {
                     //Test if connection is still open
@@ -58,9 +58,11 @@ module.exports = {
      */
     arrayMinus:function (a, b) {
         let dest = [];
+        if(typeof a === "string" || a instanceof String) throw new Error("Expected Array as first parameter");
+        if(typeof b === "string" || b instanceof String) throw new Error("Expected Array as second parameter");
         for (let i = 0; i < a.length; i++) {
             let found = false;
-            for (let j = 0; j < b; j++) {
+            for (let j = 0; j < b.length; j++) {
                 if (a[i] === b[j]) {
                     found = true;
                 }
