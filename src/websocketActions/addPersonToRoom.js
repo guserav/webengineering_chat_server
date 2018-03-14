@@ -46,13 +46,11 @@ module.exports = async function(connection, data, pool, connections) {
         );
 
         if(resultTestValidaty.length !== 5 || resultTestValidaty[1].length !== 1){
-            databaseConnection.release();
             errors.invalidRequest(connection, data.action, "User can't add persons to room he isn't in himself.", data);
             return;
         }
         //Test if private room
         if(resultTestValidaty[0][0].displayName === undefined || resultTestValidaty[0][0].displayName === null){
-            databaseConnection.release();
             errors.invalidRequest(connection, data.action, "Cant't add user to private room.", data);
             return;
         }
@@ -62,7 +60,6 @@ module.exports = async function(connection, data, pool, connections) {
         const lastMessageID = resultTestValidaty[4][0].messageID;
 
         if(usersToAdd === undefined || !(usersToAdd.length > 0)){
-            databaseConnection.release();
             errors.missingData(connection, data.action, "No valid users to Add");
             return;
         }
@@ -125,7 +122,7 @@ module.exports = async function(connection, data, pool, connections) {
         try {
             if (databaseConnection) databaseConnection.release();
         } catch (err){
-            console.log(new Date() + " Error while releasing database connection");
+            console.log(new Date() + " Error while releasing database connection" + err);
         }
     }
 };

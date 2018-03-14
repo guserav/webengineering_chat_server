@@ -42,7 +42,6 @@ module.exports = async function(connection, data, pool, connections) {
             true
         );
         if(resultUserInRoom.length === undefined || resultUserInRoom.length !== 2 || resultUserInRoom[0].length < 1 ){
-            databaseConnection.release();
             errors.missingData(connection, data.action, "User not in Room");
             return;
         }
@@ -54,7 +53,6 @@ module.exports = async function(connection, data, pool, connections) {
             [utils.buildRoomDatabaseName(room), user, type, answerToMessageID, content],
             true
         );
-        databaseConnection.release();
         let answerToWebsocket = {
             action:data.action,
             requestID:data.requestID
@@ -90,7 +88,7 @@ module.exports = async function(connection, data, pool, connections) {
         try {
             if (databaseConnection) databaseConnection.release();
         } catch (err){
-            console.log(new Date() + " Error while releasing database connection");
+            console.log(new Date() + " Error while releasing database connection" + err);
         }
     }
 };

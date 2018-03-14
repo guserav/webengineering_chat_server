@@ -94,8 +94,6 @@ module.exports = async function(connection, data, pool) {
 
         //resolve all Promises and write the response to the websocket
         await Promise.all(perRoomPromises);
-        databaseConnection.release();
-        databaseConnection = null;
         utils.writeObjectToWebsocket(connection, {
             action: data.action,
             rooms:roomsData
@@ -107,7 +105,7 @@ module.exports = async function(connection, data, pool) {
         try {
             if (databaseConnection) databaseConnection.release();
         } catch (err){
-            console.log(new Date() + " Error while releasing database connection");
+            console.log(new Date() + " Error while releasing database connection" + err);
         }
     }
 };

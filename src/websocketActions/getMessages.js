@@ -28,7 +28,6 @@ module.exports = async function(connection, data, pool) {
         );
 
         if(resultCheckUserInRoom.length === undefined || resultCheckUserInRoom.length <= 0){
-            databaseConnection.release();
             errors.missingData(connection, data.action, "User not in Room");
             return;
         }
@@ -65,7 +64,6 @@ module.exports = async function(connection, data, pool) {
             }
         }
 
-        databaseConnection.release();
         let websocketResponse = {
             action: data.action,
             messages: resultMessages.reverse()
@@ -78,7 +76,7 @@ module.exports = async function(connection, data, pool) {
         try {
             if (databaseConnection) databaseConnection.release();
         } catch (err){
-            console.log(new Date() + " Error while releasing database connection");
+            console.log(new Date() + " Error while releasing database connection" + err);
         }
     }
 };

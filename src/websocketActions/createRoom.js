@@ -73,13 +73,11 @@ module.exports = async function(connection, data, pool, connections) {
         if(roomDisplayName === null && existingUsers.length !== 2){
             errorMsgInvalidUsers.errorMsg = "Private room needs exatly to users.";
             utils.writeObjectToWebsocket(connection, errorMsgInvalidUsers);
-            databaseConnection.release();
             return;
         }
         if(existingUsers.length === undefined || existingUsers.length <= 0){
             errorMsgInvalidUsers.errorMsg = "Public room needs at least 1 person to be added.";
             utils.writeObjectToWebsocket(connection, errorMsgInvalidUsers);
-            databaseConnection.release();
             return;
         }
 
@@ -158,7 +156,7 @@ module.exports = async function(connection, data, pool, connections) {
         try {
             if (databaseConnection) databaseConnection.release();
         } catch (err){
-            console.log(new Date() + " Error while releasing database connection");
+            console.log(new Date() + " Error while releasing database connection" + err);
         }
     }
 };
