@@ -23,8 +23,8 @@ module.exports = async function(connection, data, pool, connections) {
     const userToTest = data.users;
     const room = data.roomID;
 
-    if(userToTest === undefined || userToTest.length <= 0){
-        errors.missingData(connection, data.action, "To add users they need to be specified.");
+    if(userToTest === undefined || userToTest.length <= 0 || typeof userToTest === "string" || userToTest instanceof String){
+        errors.missingData(connection, data.action, "To add users they need to be specified in a array.");
         return;
     }
 
@@ -39,9 +39,9 @@ module.exports = async function(connection, data, pool, connections) {
             "SELECT * FROM `user_room` WHERE `userID` = ? AND `roomID` = ?;" +
             "SELECT `userID` FROM `user_room` WHERE `roomID` = ?;" +
             //Get all valid user names that are not already added to the group
-            "(SELECT `userID` FROM `user` WHERE `userID` IN (?)) MINUS (SELECT `userID` FROM `user_room` WHERE `roomID` = ?);" +
+            "SELECT `userID` FROM `user` WHERE `userID` NOT IN (SELECT `userID` FROM `user_room` WHERE `roomID` = ?) AND `userID` IN (?);" +
             "SELECT `messageID` FROM ?? ORDER BY `messageID` DESC LIMIT 1;",
-            [room, user, room, room, userToTest, room, utils.buildRoomDatabaseName(room)],
+            [room, user, room, room, room, userToTest, utils.buildRoomDatabaseName(room)],
             true
         );
 
@@ -57,8 +57,8 @@ module.exports = async function(connection, data, pool, connections) {
             return;
         }
 
-        const usersInRoom = resultTestValidaty[2];
-        const usersToAdd = resultTestValidaty[3];
+        const usersInRoom = resultTestValidaty[2].map((e) => e.userID);
+        const usersToAdd = resultTestValidaty[3].map((e) => e.userID);
         const lastMessageID = resultTestValidaty[4][0].messageID;
 
         if(usersToAdd === undefined || !(usersToAdd.length > 0)){
@@ -81,8 +81,8 @@ module.exports = async function(connection, data, pool, connections) {
         try {
             resultAddingUsers = await mysql.query(
                 databaseConnection,
-                "INSERT INTO `user_room`(`roomID`, `userID`) VALUES (?);INSERT INTO ??(`type`, `userID`, `content`) VALUES (?,?,?);",
-                [usersToAdd, utils.buildRoomDatabaseName(room), "system", user, USER_ADDED_MESSAGE],
+                "INSERT INTO `user_room`(`roomID`, `userID`) VALUES ?;INSERT INTO ??(`type`, `userID`, `content`) VALUES (?,?,?);",
+                [arrayToAdd, utils.buildRoomDatabaseName(room), "system", user, USER_ADDED_MESSAGE],
                 true
             );
         } catch (err){
