@@ -78,7 +78,7 @@ module.exports = async function(connection, data, pool, connections) {
         try {
             resultAddingUsers = await mysql.query(
                 databaseConnection,
-                "INSERT INTO `user_room`(`roomID`, `userID`) VALUES ?;INSERT INTO ??(`type`, `userID`, `content`) VALUES (?,?,?);",
+                "INSERT INTO `user_room`(`roomID`, `userID`, `lastMessageRead`) VALUES ?;INSERT INTO ??(`type`, `userID`, `content`) VALUES (?,?,?);",
                 [arrayToAdd, utils.buildRoomDatabaseName(room), "system", user, USER_ADDED_MESSAGE],
                 true
             );
