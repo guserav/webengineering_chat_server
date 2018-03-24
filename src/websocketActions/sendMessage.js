@@ -66,7 +66,7 @@ module.exports = async function(connection, data, pool, connections) {
         utils.writeObjectToWebsocket(connection, answerToWebsocket);
 
         let broadcastToAll = {
-            action:"newMessage",
+            action:"newMessages",
             data:[{
                 roomID:room,
                 messages:[{
